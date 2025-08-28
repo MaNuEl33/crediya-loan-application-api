@@ -1,17 +1,20 @@
-##Spring Configuration
 server:
   port: 8080
+
 spring:
   application:
-    name: LoanApplicationApi
+    name: "LoanApplicationApi"
   devtools:
     add-properties: false
   h2:
     console:
       enabled: true
-      path: /h2
+      path: "/h2"
   profiles:
-    include:
+    include: null
+  jackson:
+    default-property-inclusion: non_null
+    property-naming-strategy: SNAKE_CASE
 
 adapters:
   r2dbc:
@@ -21,3 +24,21 @@ adapters:
     schema: "${R2DBC_SCHEMA}"
     username: "${R2DBC_USERNAME}"
     password: "${R2DBC_PASSWORD}"
+
+routes:
+  paths:
+    loan-application:
+      register: '/api/v1/solicitud'
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "health,prometheus"
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+cors:
+  allowed-origins: "http://localhost:4200,http://localhost:8080"
