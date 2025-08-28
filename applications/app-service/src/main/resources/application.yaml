@@ -28,7 +28,7 @@ adapters:
 routes:
   paths:
     loan-application:
-      register: '/api/v1/solicitud'
+      register: '/api/v1/solicitudes'
 
 management:
   endpoints:
