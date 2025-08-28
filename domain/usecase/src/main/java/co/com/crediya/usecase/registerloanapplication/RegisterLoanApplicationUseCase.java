@@ -6,6 +6,7 @@ import co.com.crediya.model.loanapplication.gateways.LoanApplicationRepository;
 import co.com.crediya.model.loanapplicationstate.LoanApplicationState;
 import co.com.crediya.model.loanapplicationstate.exceptions.LoanApplicationStateNotFoundException;
 import co.com.crediya.model.loanapplicationstate.gateways.LoanApplicationStateRepository;
+import co.com.crediya.model.loantype.LoanType;
 import co.com.crediya.model.loantype.exceptions.LoanTypeNotFoundException;
 import co.com.crediya.model.loantype.gateways.LoanTypeRepository;
 import lombok.RequiredArgsConstructor;
@@ -24,46 +25,24 @@ public class RegisterLoanApplicationUseCase {
     private final LoanApplicationStateRepository  loanApplicationStateRepository;
 
     public Mono<LoanApplication> registerLoanApplication(LoanApplication loanApplication) {
-        this.validateLoanApplication(loanApplication);
-
-       return this.validateExistingLoanType(loanApplication.getLoanType().getId())
+       return this.validateLoanApplication(loanApplication)
+               .then(this.validateExistingLoanType(loanApplication.getLoanType().getId()))
                .then(this.findPendingReviewLoanApplicationState())
                .map(state -> this.setLoanApplicationState(loanApplication, state))
                .flatMap(this.loanApplicationRepository::save);
     }
 
-    private void validateLoanApplication(LoanApplication loanApplication) {
-        if (Objects.isNull(loanApplication)) {
-            throw new LoanApplicationRegisterInvalidDataException("The loan application is required.");
-        }
+    private Mono<Void> validateLoanApplication(LoanApplication loanApplication) {
+        return Mono.defer(() -> {
+            if (Objects.isNull(loanApplication)) {
+                return Mono.error(new LoanApplicationRegisterInvalidDataException("The loan application is required."));
+            }
 
-        if (Objects.isNull(loanApplication.getAmount())) {
-            throw new LoanApplicationRegisterInvalidDataException("The amount is required.");
-        }
-
-        if (loanApplication.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
-            throw new LoanApplicationRegisterInvalidDataException("The amount must be greater than zero.");
-        }
-
-        if (Objects.isNull(loanApplication.getTerm())) {
-            throw new LoanApplicationRegisterInvalidDataException("The term is required.");
-        }
-
-        if (loanApplication.getTerm() <= 0) {
-            throw new LoanApplicationRegisterInvalidDataException("The term must be greater than zero.");
-        }
-
-        if (Objects.isNull(loanApplication.getEmail())) {
-            throw new LoanApplicationRegisterInvalidDataException("The email is required.");
-        }
-
-        if (this.isNotValidEmail(loanApplication.getEmail())) {
-            throw new LoanApplicationRegisterInvalidDataException("The email is not valid.");
-        }
-
-        if (Objects.isNull(loanApplication.getLoanType()) || Objects.isNull(loanApplication.getLoanType().getId())) {
-            throw new LoanApplicationRegisterInvalidDataException("The loan type is required.");
-        }
+            return this.validateAmount(loanApplication.getAmount())
+                    .then(this.validateTerm(loanApplication.getTerm()))
+                    .then(this.validateEmail(loanApplication.getEmail()))
+                    .then(this.validateLoanType(loanApplication.getLoanType()));
+        });
     }
 
     private Mono<Void> validateExistingLoanType(Long loanTypeId) {
@@ -86,9 +65,49 @@ public class RegisterLoanApplicationUseCase {
         return loanApplication;
     }
 
-    private boolean isNotValidEmail(String email) {
+    private Mono<Void> validateAmount(BigDecimal amount) {
+        if (Objects.isNull(amount)) {
+            return Mono.error(new LoanApplicationRegisterInvalidDataException("The amount is required."));
+        }
+
+        if (amount.compareTo(BigDecimal.ZERO) <= 0) {
+            return Mono.error(new LoanApplicationRegisterInvalidDataException("The amount must be greater than zero."));
+        }
+
+        return Mono.empty();
+    }
+
+    private Mono<Void> validateTerm(Integer term) {
+        if (Objects.isNull(term)) {
+            return Mono.error(new LoanApplicationRegisterInvalidDataException("The term is required."));
+        }
+
+        if (term <= 0) {
+            return Mono.error(new LoanApplicationRegisterInvalidDataException("The term must be greater than zero."));
+        }
+
+        return Mono.empty();
+    }
+
+    private Mono<Void> validateEmail(String email) {
         final var emailRegex = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$";
 
-        return !email.matches(emailRegex);
+        if (Objects.isNull(email)) {
+            return Mono.error(new LoanApplicationRegisterInvalidDataException("The email is required."));
+        }
+
+        if (!email.matches(emailRegex)) {
+            return Mono.error(new LoanApplicationRegisterInvalidDataException("The email is not valid."));
+        }
+
+        return Mono.empty();
+    }
+
+    private Mono<Void> validateLoanType(LoanType loanType) {
+        if (Objects.isNull(loanType) || Objects.isNull(loanType.getId())) {
+            return Mono.error(new LoanApplicationRegisterInvalidDataException("The loan type is required."));
+        }
+
+        return Mono.empty();
     }
 }
