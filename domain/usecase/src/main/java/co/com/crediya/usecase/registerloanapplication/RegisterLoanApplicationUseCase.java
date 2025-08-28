@@ -26,8 +26,8 @@ public class RegisterLoanApplicationUseCase {
 
     public Mono<LoanApplication> registerLoanApplication(LoanApplication loanApplication) {
        return this.validateLoanApplication(loanApplication)
-               .then(this.validateExistingLoanType(loanApplication.getLoanType().getId()))
-               .then(this.findPendingReviewLoanApplicationState())
+               .then(Mono.defer(() -> this.validateExistingLoanType(loanApplication.getLoanType().getId())))
+               .then(Mono.defer(this::findPendingReviewLoanApplicationState))
                .map(state -> this.setLoanApplicationState(loanApplication, state))
                .flatMap(this.loanApplicationRepository::save);
     }
