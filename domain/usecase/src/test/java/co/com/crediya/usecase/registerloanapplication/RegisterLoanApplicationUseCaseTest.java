@@ -9,6 +9,9 @@ import co.com.crediya.model.loanapplicationstate.gateways.LoanApplicationStateRe
 import co.com.crediya.model.loantype.LoanType;
 import co.com.crediya.model.loantype.exceptions.LoanTypeNotFoundException;
 import co.com.crediya.model.loantype.gateways.LoanTypeRepository;
+import co.com.crediya.model.user.User;
+import co.com.crediya.model.user.exceptions.UserNotFoundException;
+import co.com.crediya.model.user.gateways.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -34,6 +37,9 @@ class RegisterLoanApplicationUseCaseTest {
     @Mock
     private LoanApplicationStateRepository loanApplicationStateRepository;
 
+    @Mock
+    private UserRepository userRepository;
+
     @InjectMocks
     private RegisterLoanApplicationUseCase useCase;
 
@@ -57,6 +63,9 @@ class RegisterLoanApplicationUseCaseTest {
         Mockito.when(this.loanTypeRepository.findById(Mockito.anyLong()))
                 .thenReturn(Mono.just(LoanType.builder().id(9L).build()));
 
+        Mockito.when(this.userRepository.findByEmail(Mockito.anyString()))
+                .thenReturn(Mono.just(User.builder().build()));
+
         Mockito.when(this.loanApplicationStateRepository.findByCode(Mockito.anyString()))
                 .thenReturn(Mono.just(LoanApplicationState.builder().id(15L).build()));
 
@@ -68,11 +77,12 @@ class RegisterLoanApplicationUseCaseTest {
                 .verifyComplete();
 
         Mockito.verify(this.loanTypeRepository).findById(9L);
+        Mockito.verify(this.userRepository).findByEmail(EMAIL);
         Mockito.verify(this.loanApplicationStateRepository).findByCode("PENDING_REVIEW");
         Mockito.verify(this.loanApplicationRepository).save(loanApplicationToSave);
 
         Mockito.verifyNoMoreInteractions(this.loanTypeRepository, this.loanApplicationStateRepository,
-                this.loanApplicationRepository);
+                this.loanApplicationRepository, this.userRepository);
     }
 
     @Test
@@ -81,7 +91,7 @@ class RegisterLoanApplicationUseCaseTest {
                 .verifyError(LoanApplicationRegisterInvalidDataException.class);
 
         Mockito.verifyNoInteractions(this.loanTypeRepository, this.loanApplicationStateRepository,
-                this.loanApplicationRepository);
+                this.loanApplicationRepository, this.userRepository);
     }
 
     @Test
@@ -96,7 +106,7 @@ class RegisterLoanApplicationUseCaseTest {
                 .verifyError(LoanApplicationRegisterInvalidDataException.class);
 
         Mockito.verifyNoInteractions(this.loanTypeRepository, this.loanApplicationStateRepository,
-                this.loanApplicationRepository);
+                this.loanApplicationRepository, this.userRepository);
     }
 
     @Test
@@ -112,7 +122,7 @@ class RegisterLoanApplicationUseCaseTest {
                 .verifyError(LoanApplicationRegisterInvalidDataException.class);
 
         Mockito.verifyNoInteractions(this.loanTypeRepository, this.loanApplicationStateRepository,
-                this.loanApplicationRepository);
+                this.loanApplicationRepository, this.userRepository);
     }
 
     @Test
@@ -127,7 +137,7 @@ class RegisterLoanApplicationUseCaseTest {
                 .verifyError(LoanApplicationRegisterInvalidDataException.class);
 
         Mockito.verifyNoInteractions(this.loanTypeRepository, this.loanApplicationStateRepository,
-                this.loanApplicationRepository);
+                this.loanApplicationRepository, this.userRepository);
     }
 
     @Test
@@ -143,7 +153,7 @@ class RegisterLoanApplicationUseCaseTest {
                 .verifyError(LoanApplicationRegisterInvalidDataException.class);
 
         Mockito.verifyNoInteractions(this.loanTypeRepository, this.loanApplicationStateRepository,
-                this.loanApplicationRepository);
+                this.loanApplicationRepository, this.userRepository);
     }
 
     @Test
@@ -158,7 +168,7 @@ class RegisterLoanApplicationUseCaseTest {
                 .verifyError(LoanApplicationRegisterInvalidDataException.class);
 
         Mockito.verifyNoInteractions(this.loanTypeRepository, this.loanApplicationStateRepository,
-                this.loanApplicationRepository);
+                this.loanApplicationRepository, this.userRepository);
     }
 
     @Test
@@ -174,7 +184,7 @@ class RegisterLoanApplicationUseCaseTest {
                 .verifyError(LoanApplicationRegisterInvalidDataException.class);
 
         Mockito.verifyNoInteractions(this.loanTypeRepository, this.loanApplicationStateRepository,
-                this.loanApplicationRepository);
+                this.loanApplicationRepository, this.userRepository);
     }
 
     @Test
@@ -189,7 +199,7 @@ class RegisterLoanApplicationUseCaseTest {
                 .verifyError(LoanApplicationRegisterInvalidDataException.class);
 
         Mockito.verifyNoInteractions(this.loanTypeRepository, this.loanApplicationStateRepository,
-                this.loanApplicationRepository);
+                this.loanApplicationRepository, this.userRepository);
     }
 
     @Test
@@ -205,7 +215,7 @@ class RegisterLoanApplicationUseCaseTest {
                 .verifyError(LoanApplicationRegisterInvalidDataException.class);
 
         Mockito.verifyNoInteractions(this.loanTypeRepository, this.loanApplicationStateRepository,
-                this.loanApplicationRepository);
+                this.loanApplicationRepository, this.userRepository);
     }
 
     @Test
@@ -226,6 +236,32 @@ class RegisterLoanApplicationUseCaseTest {
         Mockito.verify(this.loanTypeRepository).findById(9L);
 
         Mockito.verifyNoMoreInteractions(this.loanTypeRepository);
+        Mockito.verifyNoInteractions(this.loanApplicationStateRepository,  this.loanApplicationRepository,
+                this.userRepository);
+    }
+
+    @Test
+    void shouldNotRegisterLoanApplicationWhenUserNotExists() {
+        final var loanApplication = LoanApplication.builder()
+                .amount(BigDecimal.valueOf(5000))
+                .term(6)
+                .email(EMAIL)
+                .loanType(LoanType.builder().id(9L).build())
+                .build();
+
+        Mockito.when(this.loanTypeRepository.findById(Mockito.anyLong()))
+                .thenReturn(Mono.just(LoanType.builder().id(9L).build()));
+
+        Mockito.when(this.userRepository.findByEmail(Mockito.anyString()))
+                .thenReturn(Mono.empty());
+
+        StepVerifier.create(this.useCase.registerLoanApplication(loanApplication))
+                .verifyError(UserNotFoundException.class);
+
+        Mockito.verify(this.loanTypeRepository).findById(9L);
+        Mockito.verify(this.userRepository).findByEmail(EMAIL);
+
+        Mockito.verifyNoMoreInteractions(this.loanTypeRepository, this.userRepository);
         Mockito.verifyNoInteractions(this.loanApplicationStateRepository,  this.loanApplicationRepository);
     }
 
@@ -241,6 +277,9 @@ class RegisterLoanApplicationUseCaseTest {
         Mockito.when(this.loanTypeRepository.findById(Mockito.anyLong()))
                 .thenReturn(Mono.just(LoanType.builder().id(9L).build()));
 
+        Mockito.when(this.userRepository.findByEmail(Mockito.anyString()))
+                .thenReturn(Mono.just(User.builder().build()));
+
         Mockito.when(this.loanApplicationStateRepository.findByCode(Mockito.anyString()))
                 .thenReturn(Mono.empty());
 
@@ -248,9 +287,11 @@ class RegisterLoanApplicationUseCaseTest {
                 .verifyError(LoanApplicationStateNotFoundException.class);
 
         Mockito.verify(this.loanTypeRepository).findById(9L);
+        Mockito.verify(this.userRepository).findByEmail(EMAIL);
         Mockito.verify(this.loanApplicationStateRepository).findByCode("PENDING_REVIEW");
 
-        Mockito.verifyNoMoreInteractions(this.loanTypeRepository, this.loanApplicationStateRepository);
+        Mockito.verifyNoMoreInteractions(this.loanTypeRepository, this.userRepository,
+                this.loanApplicationStateRepository);
         Mockito.verifyNoInteractions(this.loanApplicationRepository);
     }
 }

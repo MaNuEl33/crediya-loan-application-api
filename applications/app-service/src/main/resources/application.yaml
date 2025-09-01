@@ -1,6 +1,5 @@
 server:
   port: 8080
-
 spring:
   application:
     name: "LoanApplicationApi"
@@ -13,9 +12,8 @@ spring:
   profiles:
     include: null
   jackson:
-    default-property-inclusion: non_null
-    property-naming-strategy: SNAKE_CASE
-
+    default-property-inclusion: "non_null"
+    property-naming-strategy: "SNAKE_CASE"
 adapters:
   r2dbc:
     host: "${R2DBC_HOST}"
@@ -24,12 +22,10 @@ adapters:
     schema: "${R2DBC_SCHEMA}"
     username: "${R2DBC_USERNAME}"
     password: "${R2DBC_PASSWORD}"
-
 routes:
   paths:
     loan-application:
-      register: '/api/v1/solicitudes'
-
+      register: "/api/v1/solicitudes"
 management:
   endpoints:
     web:
@@ -39,6 +35,12 @@ management:
     health:
       probes:
         enabled: true
-
+  health:
+    circuitbreakers:
+      enabled: true
 cors:
   allowed-origins: "http://localhost:4200,http://localhost:8080"
+adapter:
+  restconsumer:
+    timeout: 5000
+    url: "http://localhost:8085"

@@ -9,6 +9,8 @@ import co.com.crediya.model.loanapplicationstate.gateways.LoanApplicationStateRe
 import co.com.crediya.model.loantype.LoanType;
 import co.com.crediya.model.loantype.exceptions.LoanTypeNotFoundException;
 import co.com.crediya.model.loantype.gateways.LoanTypeRepository;
+import co.com.crediya.model.user.exceptions.UserNotFoundException;
+import co.com.crediya.model.user.gateways.UserRepository;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
@@ -23,10 +25,12 @@ public class RegisterLoanApplicationUseCase {
     private final LoanApplicationRepository loanApplicationRepository;
     private final LoanTypeRepository loanTypeRepository;
     private final LoanApplicationStateRepository  loanApplicationStateRepository;
+    private final UserRepository userRepository;
 
     public Mono<LoanApplication> registerLoanApplication(LoanApplication loanApplication) {
        return this.validateLoanApplication(loanApplication)
                .then(Mono.defer(() -> this.validateExistingLoanType(loanApplication.getLoanType().getId())))
+               .then(Mono.defer(() -> this.validateExistingUser(loanApplication.getEmail())))
                .then(Mono.defer(this::findPendingReviewLoanApplicationState))
                .map(state -> this.setLoanApplicationState(loanApplication, state))
                .flatMap(this.loanApplicationRepository::save);
@@ -48,6 +52,12 @@ public class RegisterLoanApplicationUseCase {
     private Mono<Void> validateExistingLoanType(Long loanTypeId) {
         return this.loanTypeRepository.findById(loanTypeId)
                 .switchIfEmpty(Mono.error(new LoanTypeNotFoundException("Loan type not found.")))
+                .then();
+    }
+
+    private Mono<Void> validateExistingUser(String email) {
+        return this.userRepository.findByEmail(email)
+                .switchIfEmpty(Mono.error(new UserNotFoundException("User with email %s not found.".formatted(email))))
                 .then();
     }
 
