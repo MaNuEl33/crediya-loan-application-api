@@ -1,6 +1,7 @@
 package co.com.crediya.api.handlers;
 
 import co.com.crediya.api.dtos.ErrorResponseDto;
+import co.com.crediya.api.exceptions.EmailInvalidException;
 import co.com.crediya.api.exceptions.ValidationException;
 import co.com.crediya.model.loanapplication.exceptions.LoanApplicationRegisterInvalidDataException;
 import co.com.crediya.model.loantype.exceptions.LoanTypeNotFoundException;
@@ -20,6 +21,7 @@ public class GlobalErrorHandler {
                 .onErrorResume(LoanApplicationRegisterInvalidDataException.class,
                         GlobalErrorHandler::handleLoanApplicationRegisterInvalidDataException)
                 .onErrorResume(LoanTypeNotFoundException.class, GlobalErrorHandler::handleLoanTypeNotFoundException)
+                .onErrorResume(EmailInvalidException.class, GlobalErrorHandler::handleEmailInvalidException)
                 .onErrorResume(Exception.class, GlobalErrorHandler::handleUnexpectedException);
     }
 
@@ -45,6 +47,14 @@ public class GlobalErrorHandler {
         final var errorResponse = new ErrorResponseDto(HttpStatus.CONFLICT.value(), e.getMessage());
 
         return ServerResponse.status(HttpStatus.CONFLICT)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(errorResponse);
+    }
+
+    private static Mono<ServerResponse> handleEmailInvalidException(EmailInvalidException e) {
+        final var errorResponse = new ErrorResponseDto(HttpStatus.FORBIDDEN.value(), e.getMessage());
+
+        return ServerResponse.status(HttpStatus.FORBIDDEN)
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(errorResponse);
     }
