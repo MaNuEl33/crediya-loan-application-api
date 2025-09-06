@@ -2,7 +2,8 @@ package co.com.crediya.api.routers;
 
 import co.com.crediya.api.config.LoanApplicationPath;
 import co.com.crediya.api.handlers.GlobalErrorHandler;
-import co.com.crediya.api.handlers.LoanApplicationHandler;
+import co.com.crediya.api.handlers.ManualValidationApplicationReportHandler;
+import co.com.crediya.api.handlers.RegisterLoanApplicationHandler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -16,12 +17,16 @@ import static org.springframework.web.reactive.function.server.RouterFunctions.r
 @RequiredArgsConstructor
 public class LoanApplicationRouterRest {
 
-    private final LoanApplicationHandler loanApplicationHandler;
+    private final RegisterLoanApplicationHandler registerLoanApplicationHandler;
+    private final ManualValidationApplicationReportHandler manualValidationApplicationReportHandler;
     private final LoanApplicationPath loanApplicationPath;
 
     @Bean
     public RouterFunction<ServerResponse> loanApplicationRoutes() {
-        return route(POST(this.loanApplicationPath.getRegister()), this.loanApplicationHandler::listenRegisterLoanApplication)
+        return route(POST(this.loanApplicationPath.getRegister()),
+                        this.registerLoanApplicationHandler::listenRegisterLoanApplication)
+                .andRoute(POST(this.loanApplicationPath.getManualValidationApplicationReport()),
+                        this.manualValidationApplicationReportHandler::listenManualValidationApplicationReport)
                 .filter(GlobalErrorHandler.errorHandler());
     }
 }

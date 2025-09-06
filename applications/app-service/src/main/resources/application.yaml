@@ -29,6 +29,7 @@ routes:
   paths:
     loan-application:
       register: '/api/v1/solicitudes'
+      manual-validation-application-report: '/api/v1/solicitudes/reporte-validacion-manual'
 
 management:
   endpoints:

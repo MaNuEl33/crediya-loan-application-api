@@ -5,6 +5,7 @@ import co.com.crediya.api.exceptions.EmailInvalidException;
 import co.com.crediya.api.exceptions.ValidationException;
 import co.com.crediya.model.loanapplication.exceptions.LoanApplicationRegisterInvalidDataException;
 import co.com.crediya.model.loantype.exceptions.LoanTypeNotFoundException;
+import co.com.crediya.model.manualvalidationapplicationreport.exceptions.ManualValidationApplicationReportInvalidDataException;
 import lombok.experimental.UtilityClass;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -17,25 +18,17 @@ public class GlobalErrorHandler {
 
     public static HandlerFilterFunction<ServerResponse, ServerResponse> errorHandler() {
         return (request, next) ->next.handle(request)
-                .onErrorResume(ValidationException.class, GlobalErrorHandler::handleValidationException)
+                .onErrorResume(ValidationException.class, GlobalErrorHandler::handleInvalidDataException)
                 .onErrorResume(LoanApplicationRegisterInvalidDataException.class,
-                        GlobalErrorHandler::handleLoanApplicationRegisterInvalidDataException)
+                        GlobalErrorHandler::handleInvalidDataException)
+                .onErrorResume(ManualValidationApplicationReportInvalidDataException.class,
+                        GlobalErrorHandler::handleInvalidDataException)
                 .onErrorResume(LoanTypeNotFoundException.class, GlobalErrorHandler::handleLoanTypeNotFoundException)
                 .onErrorResume(EmailInvalidException.class, GlobalErrorHandler::handleEmailInvalidException)
                 .onErrorResume(Exception.class, GlobalErrorHandler::handleUnexpectedException);
     }
 
-    private static Mono<ServerResponse> handleValidationException(ValidationException e) {
-        final var errorResponse = new ErrorResponseDto(HttpStatus.BAD_REQUEST.value(), e.getMessage());
-
-        return ServerResponse.badRequest()
-                .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(errorResponse);
-    }
-
-    private static Mono<ServerResponse> handleLoanApplicationRegisterInvalidDataException(
-            LoanApplicationRegisterInvalidDataException e) {
-
+    private static Mono<ServerResponse> handleInvalidDataException(Exception e) {
         final var errorResponse = new ErrorResponseDto(HttpStatus.BAD_REQUEST.value(), e.getMessage());
 
         return ServerResponse.badRequest()

@@ -20,19 +20,19 @@ import reactor.core.publisher.Mono;
 @Component
 @RequiredArgsConstructor
 @Log4j2
-public class LoanApplicationHandler {
+public class RegisterLoanApplicationHandler {
 
-    private final RegisterLoanApplicationUseCase registerLoanApplicationUseCase;
-    private final LoanApplicationRegisterDtoMapper loanApplicationRegisterDtoMapper;
+    private final RegisterLoanApplicationUseCase useCase;
+    private final LoanApplicationRegisterDtoMapper dtoMapper;
     private final Validator validator;
 
     public Mono<ServerResponse> listenRegisterLoanApplication(ServerRequest serverRequest) {
         return serverRequest.bodyToMono(LoanApplicationRegisterRequestDto.class)
                 .transform(requestBody -> ValidatorHelper.validateObject(requestBody, validator))
                 .flatMap(requestDto -> this.validateEmail(requestDto).thenReturn(requestDto))
-                .map(this.loanApplicationRegisterDtoMapper::toLoanApplicationModel)
-                .flatMap(this.registerLoanApplicationUseCase::registerLoanApplication)
-                .map(this.loanApplicationRegisterDtoMapper::toLoanApplicationRegisterResponseDto)
+                .map(this.dtoMapper::toLoanApplicationModel)
+                .flatMap(this.useCase::registerLoanApplication)
+                .map(this.dtoMapper::toLoanApplicationRegisterResponseDto)
                 .flatMap(r -> ServerResponse.status(HttpStatus.CREATED)
                         .contentType(MediaType.APPLICATION_JSON)
                         .bodyValue(r))
