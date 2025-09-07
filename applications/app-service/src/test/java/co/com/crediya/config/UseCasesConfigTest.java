@@ -1,13 +1,16 @@
 package co.com.crediya.config;
 
+import co.com.crediya.usecase.manualvalidationapplicationreport.ManualValidationApplicationReportUseCase;
+import co.com.crediya.usecase.registerloanapplication.RegisterLoanApplicationUseCase;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class UseCasesConfigTest {
+class UseCasesConfigTest {
 
     @Test
     void testUseCaseBeansExist() {
@@ -31,14 +34,14 @@ public class UseCasesConfigTest {
     static class TestConfig {
 
         @Bean
-        public MyUseCase myUseCase() {
-            return new MyUseCase();
+        public ManualValidationApplicationReportUseCase manualValidationApplicationReportUseCase() {
+            return Mockito.mock(ManualValidationApplicationReportUseCase.class);
+        }
+
+        @Bean
+        public RegisterLoanApplicationUseCase registerLoanApplicationUseCase() {
+            return Mockito.mock(RegisterLoanApplicationUseCase.class);
         }
     }
 
-    static class MyUseCase {
-        public String execute() {
-            return "MyUseCase Test";
-        }
-    }
 }
