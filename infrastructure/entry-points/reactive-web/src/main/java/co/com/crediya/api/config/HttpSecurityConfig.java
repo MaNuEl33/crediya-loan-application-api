@@ -42,6 +42,7 @@ public class HttpSecurityConfig {
                 .authorizeExchange(exchange -> exchange
                         .pathMatchers(this.loanApplicationPath.getRegister()).hasRole("APPLICANT")
                         .pathMatchers(this.loanApplicationPath.getManualValidationApplicationReport()).hasRole("ADVISOR")
+                        .pathMatchers(this.loanApplicationPath.getApproveOrRejectLoanApplication()).hasRole("ADVISOR")
                         .anyExchange().authenticated()
                 )
                 .addFilterAt(jwtAuthFilter, SecurityWebFiltersOrder.AUTHENTICATION)

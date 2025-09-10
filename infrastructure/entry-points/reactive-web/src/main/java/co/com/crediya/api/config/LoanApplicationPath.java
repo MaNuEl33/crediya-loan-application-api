@@ -10,4 +10,5 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class LoanApplicationPath {
     private String register;
     private String manualValidationApplicationReport;
+    private String approveOrRejectLoanApplication;
 }

@@ -1,6 +1,5 @@
 server:
   port: 8080
-
 spring:
   application:
     name: "LoanApplicationApi"
@@ -13,9 +12,8 @@ spring:
   profiles:
     include: null
   jackson:
-    default-property-inclusion: non_null
-    property-naming-strategy: SNAKE_CASE
-
+    default-property-inclusion: "non_null"
+    property-naming-strategy: "SNAKE_CASE"
 adapters:
   r2dbc:
     host: "${R2DBC_HOST}"
@@ -24,13 +22,12 @@ adapters:
     schema: "${R2DBC_SCHEMA}"
     username: "${R2DBC_USERNAME}"
     password: "${R2DBC_PASSWORD}"
-
 routes:
   paths:
     loan-application:
-      register: '/api/v1/solicitudes'
-      manual-validation-application-report: '/api/v1/solicitudes/reporte-validacion-manual'
-
+      register: "/api/v1/solicitudes"
+      manual-validation-application-report: "/api/v1/solicitudes/reporte-validacion-manual"
+      approve-or-reject-loan-application: "/api/v1/solicitudes/{id}/decision"
 management:
   endpoints:
     web:
@@ -40,9 +37,12 @@ management:
     health:
       probes:
         enabled: true
-
 cors:
   allowed-origins: "http://localhost:4200,http://localhost:8080"
-
 jwt:
   secret: "${JWT_SECRET}"
+adapter:
+  sqs:
+    region: "${SQS_REGION}"
+    queueUrl: "${SQS_QUEUE_URL}"
+    endpoint: "${SQS_ENDPOINT}"

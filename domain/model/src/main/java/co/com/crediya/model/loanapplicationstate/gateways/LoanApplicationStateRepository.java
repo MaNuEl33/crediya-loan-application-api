@@ -5,4 +5,5 @@ import reactor.core.publisher.Mono;
 
 public interface LoanApplicationStateRepository {
     Mono<LoanApplicationState> findByCode(String code);
+    Mono<LoanApplicationState> findById(Long id);
 }

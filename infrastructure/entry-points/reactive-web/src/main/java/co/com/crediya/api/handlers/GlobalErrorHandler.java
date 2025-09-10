@@ -3,7 +3,10 @@ package co.com.crediya.api.handlers;
 import co.com.crediya.api.dtos.ErrorResponseDto;
 import co.com.crediya.api.exceptions.EmailInvalidException;
 import co.com.crediya.api.exceptions.ValidationException;
+import co.com.crediya.model.loanapplication.exceptions.LoanApplicationNotFoundException;
 import co.com.crediya.model.loanapplication.exceptions.LoanApplicationRegisterInvalidDataException;
+import co.com.crediya.model.loanapplicationstate.exceptions.ApproveOrRejectLoanApplicationInvalidDataException;
+import co.com.crediya.model.loantype.exceptions.LoanTypeAlreadyProcessedException;
 import co.com.crediya.model.loantype.exceptions.LoanTypeNotFoundException;
 import co.com.crediya.model.manualvalidationapplicationreport.exceptions.ManualValidationApplicationReportInvalidDataException;
 import lombok.experimental.UtilityClass;
@@ -23,7 +26,12 @@ public class GlobalErrorHandler {
                         GlobalErrorHandler::handleInvalidDataException)
                 .onErrorResume(ManualValidationApplicationReportInvalidDataException.class,
                         GlobalErrorHandler::handleInvalidDataException)
-                .onErrorResume(LoanTypeNotFoundException.class, GlobalErrorHandler::handleLoanTypeNotFoundException)
+                .onErrorResume(ApproveOrRejectLoanApplicationInvalidDataException.class,
+                        GlobalErrorHandler::handleInvalidDataException)
+                .onErrorResume(LoanApplicationNotFoundException.class,
+                        GlobalErrorHandler::handleResourceNotFoundException)
+                .onErrorResume(LoanTypeNotFoundException.class, GlobalErrorHandler::handleResourceConflictException)
+                .onErrorResume(LoanTypeAlreadyProcessedException.class, GlobalErrorHandler::handleResourceConflictException)
                 .onErrorResume(EmailInvalidException.class, GlobalErrorHandler::handleEmailInvalidException)
                 .onErrorResume(Exception.class, GlobalErrorHandler::handleUnexpectedException);
     }
@@ -36,7 +44,7 @@ public class GlobalErrorHandler {
                 .bodyValue(errorResponse);
     }
 
-    private static Mono<ServerResponse> handleLoanTypeNotFoundException(LoanTypeNotFoundException e) {
+    private static Mono<ServerResponse> handleResourceConflictException(Exception e) {
         final var errorResponse = new ErrorResponseDto(HttpStatus.CONFLICT.value(), e.getMessage());
 
         return ServerResponse.status(HttpStatus.CONFLICT)
@@ -48,6 +56,14 @@ public class GlobalErrorHandler {
         final var errorResponse = new ErrorResponseDto(HttpStatus.FORBIDDEN.value(), e.getMessage());
 
         return ServerResponse.status(HttpStatus.FORBIDDEN)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(errorResponse);
+    }
+
+    private static Mono<ServerResponse> handleResourceNotFoundException(Exception e) {
+        final var errorResponse = new ErrorResponseDto(HttpStatus.NOT_FOUND.value(), e.getMessage());
+
+        return ServerResponse.status(HttpStatus.NOT_FOUND)
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(errorResponse);
     }

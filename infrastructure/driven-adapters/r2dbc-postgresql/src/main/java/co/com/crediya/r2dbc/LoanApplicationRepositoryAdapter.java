@@ -28,4 +28,13 @@ public class LoanApplicationRepositoryAdapter implements LoanApplicationReposito
                 .doOnSuccess(l -> log.info("Loan application saved in the database successfully."))
                 .doOnError(e -> log.error("Error saving the loan application in the database.", e));
     }
+
+    @Override
+    public Mono<LoanApplication> findById(Long id) {
+        return this.reactiveRepository.findById(id)
+                .map(this.entityMapper::toLoadApplicationModel)
+                .doFirst(() -> log.info("Searching the loan application by its id in the database."))
+                .doOnSuccess(r -> log.info("Loan application found in the database."))
+                .doOnError(err -> log.error("Error finding the loan application in the database.", err));
+    }
 }

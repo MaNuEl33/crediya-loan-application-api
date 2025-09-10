@@ -25,4 +25,13 @@ public class LoanApplicationStateRepositoryAdapter implements LoanApplicationSta
                 .doOnSuccess(l -> log.info("Loan application state found in the database."))
                 .doOnError(err -> log.error("Error finding loan application state in the database.", err));
     }
+
+    @Override
+    public Mono<LoanApplicationState> findById(Long id) {
+        return this.reactiveRepository.findById(id)
+                .map(this.entityMapper::toLoanApplicationState)
+                .doFirst(() -> log.info("Finding loan application state by id in the database."))
+                .doOnSuccess(l -> log.info("Loan application state found in the database."))
+                .doOnError(err -> log.error("Error finding loan application state in the database.", err));
+    }
 }
