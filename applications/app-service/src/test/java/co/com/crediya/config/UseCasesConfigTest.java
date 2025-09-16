@@ -3,6 +3,7 @@ package co.com.crediya.config;
 import co.com.crediya.usecase.approveorrejectloanapplication.ApproveOrRejectLoanApplicationUseCase;
 import co.com.crediya.usecase.manualvalidationapplicationreport.ManualValidationApplicationReportUseCase;
 import co.com.crediya.usecase.registerloanapplication.RegisterLoanApplicationUseCase;
+import co.com.crediya.usecase.updateautomaticvalidationloanapplicationstate.UpdateAutomaticValidationLoanApplicationStateUseCase;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
@@ -47,6 +48,11 @@ class UseCasesConfigTest {
         @Bean
         public ApproveOrRejectLoanApplicationUseCase  approveOrRejectLoanApplicationUseCase() {
             return Mockito.mock(ApproveOrRejectLoanApplicationUseCase.class);
+        }
+
+        @Bean
+        public UpdateAutomaticValidationLoanApplicationStateUseCase updateAutomaticValidationLoanApplicationStateUseCase() {
+            return Mockito.mock(UpdateAutomaticValidationLoanApplicationStateUseCase.class);
         }
     }
 

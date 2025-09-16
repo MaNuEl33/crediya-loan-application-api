@@ -37,6 +37,9 @@ management:
     health:
       probes:
         enabled: true
+  health:
+    circuitbreakers:
+      enabled: true
 cors:
   allowed-origins: "http://localhost:4200,http://localhost:8080"
 jwt:
@@ -44,5 +47,31 @@ jwt:
 adapter:
   sqs:
     region: "${SQS_REGION}"
-    queueUrl: "${SQS_QUEUE_URL}"
+    processedLoanApplicationsQueueUrl: "${SQS_PROCESSED_LOAN_APPLICATIONS_QUEUE_URL}"
+    debtCapacityCalculationQueueUrl: "${SQS_DEBT_CAPACITY_CALCULATION_QUEUE_URL}"
+    processedAutomaticValidationLoanApplicationsQueueUrl: "${SQS_PROCESSED_AUTOMATIC_VALIDATION_LOAN_APPLICATIONS_QUEUE_URL}"
     endpoint: "${SQS_ENDPOINT}"
+  restconsumer:
+    timeout: 5000
+    url: "${AUTH_SERVICE_URL}"
+resilience4j:
+  circuitbreaker:
+    instances:
+      authServiceFindByEmail:
+        registerHealthIndicator: true
+        failureRateThreshold: 50
+        slowCallRateThreshold: 50
+        slowCallDurationThreshold: "2s"
+        permittedNumberOfCallsInHalfOpenState: 3
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 10
+        waitDurationInOpenState: "10s"
+entrypoint:
+  sqs:
+    region: "${SQS_REGION}"
+    endpoint: "${SQS_ENDPOINT}"
+    queueUrl: "${SQS_AUTOMATIC_VALIDATION_LOAN_APPLICATIONS_RESULTS_QUEUE_URL}"
+    waitTimeSeconds: 20
+    maxNumberOfMessages: 10
+    visibilityTimeoutSeconds: 10
+    numberOfThreads: 1

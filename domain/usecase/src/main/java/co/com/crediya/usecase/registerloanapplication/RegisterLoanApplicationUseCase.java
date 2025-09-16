@@ -2,6 +2,7 @@ package co.com.crediya.usecase.registerloanapplication;
 
 import co.com.crediya.model.loanapplication.LoanApplication;
 import co.com.crediya.model.loanapplication.exceptions.LoanApplicationRegisterInvalidDataException;
+import co.com.crediya.model.loanapplication.gateways.LoanApplicationNotifier;
 import co.com.crediya.model.loanapplication.gateways.LoanApplicationRepository;
 import co.com.crediya.model.loanapplicationstate.LoanApplicationState;
 import co.com.crediya.model.loanapplicationstate.exceptions.LoanApplicationStateNotFoundException;
@@ -9,27 +10,41 @@ import co.com.crediya.model.loanapplicationstate.gateways.LoanApplicationStateRe
 import co.com.crediya.model.loantype.LoanType;
 import co.com.crediya.model.loantype.exceptions.LoanTypeNotFoundException;
 import co.com.crediya.model.loantype.gateways.LoanTypeRepository;
+import co.com.crediya.model.user.User;
+import co.com.crediya.model.user.UserNotFoundException;
+import co.com.crediya.model.user.gateways.UserRepository;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
+import reactor.util.context.Context;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Objects;
 
 @RequiredArgsConstructor
 public class RegisterLoanApplicationUseCase {
 
     private static final String PENDING_REVIEW_STATE_CODE = "PENDING_REVIEW";
+    private static final String ACCEPTED_STATE_CODE = "ACCEPTED";
 
     private final LoanApplicationRepository loanApplicationRepository;
     private final LoanTypeRepository loanTypeRepository;
     private final LoanApplicationStateRepository  loanApplicationStateRepository;
+    private final UserRepository userRepository;
+    private final LoanApplicationNotifier loanApplicationNotifier;
 
     public Mono<LoanApplication> registerLoanApplication(LoanApplication loanApplication) {
-       return this.validateLoanApplication(loanApplication)
+       return Mono.deferContextual(ctx -> this.validateLoanApplication(loanApplication)
                .then(Mono.defer(() -> this.validateExistingLoanType(loanApplication.getLoanType().getId())))
-               .then(Mono.defer(this::findPendingReviewLoanApplicationState))
+               .then(Mono.defer(() -> this.findLoanApplicationState(PENDING_REVIEW_STATE_CODE)))
                .map(state -> this.setLoanApplicationState(loanApplication, state))
-               .flatMap(this.loanApplicationRepository::save);
+               .flatMap(this.loanApplicationRepository::save)
+               .doOnSuccess(saveLoanApplication -> this.calculateDebtCapacity(saveLoanApplication)
+                       .subscribeOn(Schedulers.boundedElastic())
+                       .contextWrite(Context.of(ctx))
+                       .subscribe()
+               ));
     }
 
     private Mono<Void> validateLoanApplication(LoanApplication loanApplication) {
@@ -51,11 +66,11 @@ public class RegisterLoanApplicationUseCase {
                 .then();
     }
 
-    private Mono<LoanApplicationState> findPendingReviewLoanApplicationState() {
+    private Mono<LoanApplicationState> findLoanApplicationState(String stateCode) {
         final var errorMessage = "Loan application state not found by the following code %s"
-                .formatted(PENDING_REVIEW_STATE_CODE);
+                .formatted(stateCode);
 
-        return this.loanApplicationStateRepository.findByCode(PENDING_REVIEW_STATE_CODE)
+        return this.loanApplicationStateRepository.findByCode(stateCode)
                 .switchIfEmpty(Mono.error(new LoanApplicationStateNotFoundException(errorMessage)));
     }
 
@@ -109,5 +124,41 @@ public class RegisterLoanApplicationUseCase {
         }
 
         return Mono.empty();
+    }
+
+    private Mono<Void> calculateDebtCapacity(LoanApplication loanApplication) {
+        return this.getLoanType(loanApplication.getLoanType().getId())
+                .filter(LoanType::getIsAutoValidationEnabled)
+                .doOnNext(loanApplication::setLoanType)
+                .flatMap(type -> Mono.zip(
+                        this.getUserBaseSalary(loanApplication.getEmail()),
+                        this.getActiveLoans(loanApplication.getEmail())
+                ))
+                .flatMap(t -> this.loanApplicationNotifier.notifyDebtCapacityCalculation(t.getT2(), t.getT1(), loanApplication));
+    }
+
+    private Mono<BigDecimal> getUserBaseSalary(String email) {
+        return this.userRepository.findByEmail(email)
+                .map(User::getBaseSalary)
+                .switchIfEmpty(Mono.error(new UserNotFoundException("User with email %s not found.".formatted(email))))
+                .subscribeOn(Schedulers.parallel());
+    }
+
+    private Mono<List<LoanApplication>> getActiveLoans(String email) {
+        return this.findLoanApplicationState(ACCEPTED_STATE_CODE)
+                .flatMapMany(st -> this.loanApplicationRepository.findByStateIdAndEmail(st.getId(), email))
+                .flatMap(this::setLoanType)
+                .collectList()
+                .subscribeOn(Schedulers.parallel());
+    }
+
+    private Mono<LoanApplication> setLoanType(LoanApplication loanApplication) {
+        return this.loanTypeRepository.findById(loanApplication.getLoanType().getId())
+                .map(type -> loanApplication.toBuilder().loanType(type).build());
+    }
+
+    private Mono<LoanType> getLoanType(Long loanTypeId) {
+        return this.loanTypeRepository.findById(loanTypeId)
+                .switchIfEmpty(Mono.error(new LoanTypeNotFoundException("Loan type not found.")));
     }
 }

@@ -7,7 +7,6 @@ buildscript {
 		pitestVersion = '1.19.0-rc.1'
         lombokVersion = '1.18.38'
         jjwtVersion = '0.12.7'
-        jsonJavaVersion = '20250517'
 	}
 }
 

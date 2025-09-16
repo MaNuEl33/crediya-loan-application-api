@@ -7,6 +7,7 @@ import co.com.crediya.r2dbc.repositories.LoanApplicationReactiveRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Repository;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Repository
@@ -36,5 +37,14 @@ public class LoanApplicationRepositoryAdapter implements LoanApplicationReposito
                 .doFirst(() -> log.info("Searching the loan application by its id in the database."))
                 .doOnSuccess(r -> log.info("Loan application found in the database."))
                 .doOnError(err -> log.error("Error finding the loan application in the database.", err));
+    }
+
+    @Override
+    public Flux<LoanApplication> findByStateIdAndEmail(Long stateId, String email) {
+        return this.reactiveRepository.findByStateIdAndEmail(stateId, email)
+                .map(this.entityMapper::toLoadApplicationModel)
+                .doFirst(() -> log.info("Searching loans applications by its state id and email in the database."))
+                .doOnComplete(() -> log.info("Loans applications found in the database."))
+                .doOnError(err -> log.error("Error finding the loans application in the database.", err));
     }
 }
