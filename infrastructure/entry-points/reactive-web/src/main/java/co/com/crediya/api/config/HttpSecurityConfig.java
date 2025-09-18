@@ -43,6 +43,7 @@ public class HttpSecurityConfig {
                         .pathMatchers(this.loanApplicationPath.getRegister()).hasRole("APPLICANT")
                         .pathMatchers(this.loanApplicationPath.getManualValidationApplicationReport()).hasRole("ADVISOR")
                         .pathMatchers(this.loanApplicationPath.getApproveOrRejectLoanApplication()).hasRole("ADVISOR")
+                        .pathMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .anyExchange().authenticated()
                 )
                 .addFilterAt(jwtAuthFilter, SecurityWebFiltersOrder.AUTHENTICATION)
