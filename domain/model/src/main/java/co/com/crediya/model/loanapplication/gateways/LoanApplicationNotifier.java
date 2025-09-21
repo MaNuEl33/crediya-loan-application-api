@@ -12,4 +12,5 @@ public interface LoanApplicationNotifier {
     Mono<Void> notifyProcessedLoanApplication(LoanApplication loanApplication, LoanApplicationApprovalState approvalState);
     Mono<Void> notifyDebtCapacityCalculation(List<LoanApplication> activeLoans, BigDecimal baseSalary, LoanApplication loanApplication);
     Mono<Void> notifyAutomaticValidationLoanApplicationState(LoanApplication loanApplication, LoanApplicationCodeState codeState);
+    Mono<Void> notifyAcceptedLoanApplication(LoanApplication loanApplication);
 }

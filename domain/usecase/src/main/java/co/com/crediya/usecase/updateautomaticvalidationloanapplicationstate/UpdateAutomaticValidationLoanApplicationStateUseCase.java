@@ -27,7 +27,9 @@ public class UpdateAutomaticValidationLoanApplicationStateUseCase {
                 .flatMap(l -> this.setLoanApplicationState(l, codeState))
                 .flatMap(this.loanApplicationRepository::save)
                 .flatMap(this::setLoanType)
-                .flatMap(l -> this.loanApplicationNotifier.notifyAutomaticValidationLoanApplicationState(l, codeState));
+                .flatMap(l -> Mono.when(
+                        this.loanApplicationNotifier.notifyAutomaticValidationLoanApplicationState(l, codeState),
+                        this.notifyAcceptedLoanApplication(l, codeState)));
     }
 
     private Mono<LoanApplication> findLoanApplicationById(Long loanApplicationId) {
@@ -53,5 +55,12 @@ public class UpdateAutomaticValidationLoanApplicationStateUseCase {
         return this.loanTypeRepository.findById(loanApplication.getLoanType().getId())
                 .switchIfEmpty(Mono.error(new LoanTypeNotFoundException(notFoundErrorMessage)))
                 .map(loanType -> loanApplication.toBuilder().loanType(loanType).build());
+    }
+
+    private Mono<Void> notifyAcceptedLoanApplication(LoanApplication loanApplication, LoanApplicationCodeState codeState) {
+        return switch (codeState) {
+            case ACCEPTED ->  this.loanApplicationNotifier.notifyAcceptedLoanApplication(loanApplication);
+            case REJECTED, MANUAL_REVIEW -> Mono.empty();
+        };
     }
 }

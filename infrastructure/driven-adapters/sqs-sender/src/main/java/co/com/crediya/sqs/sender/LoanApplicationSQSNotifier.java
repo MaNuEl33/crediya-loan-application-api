@@ -86,6 +86,26 @@ public class LoanApplicationSQSNotifier implements LoanApplicationNotifier {
                 .then();
     }
 
+    @Override
+    public Mono<Void> notifyAcceptedLoanApplication(LoanApplication loanApplication) {
+        log.info("Sending accepted loan application notification to SQS");
+
+        final SendMessageRequest messageRequest;
+
+        try {
+            messageRequest = this.buildMessageRequest(loanApplication);
+        } catch (JsonProcessingException e) {
+            this.logSerializingError(e);
+            return Mono.error(e);
+        }
+
+        return Mono.fromFuture(this.client.sendMessage(messageRequest))
+                .doOnNext(this::logSendMessageResponse)
+                .doOnSuccess(r -> log.info("Accepted loan application notification sent to SQS successfully."))
+                .doOnError(err -> log.error("Error sending accepted loan application notification to SQS", err))
+                .then();
+    }
+
     private SendMessageRequest buildMessageRequest(LoanApplication loanApplication, LoanApplicationApprovalState approvalState)
             throws JsonProcessingException {
         final var objectMapper = new ObjectMapper();
@@ -134,6 +154,17 @@ public class LoanApplicationSQSNotifier implements LoanApplicationNotifier {
 
         return SendMessageRequest.builder()
                 .queueUrl(this.properties.processedAutomaticValidationLoanApplicationsQueueUrl())
+                .messageBody(message)
+                .build();
+    }
+
+    private SendMessageRequest buildMessageRequest(LoanApplication loanApplication) throws JsonProcessingException {
+        final var objectMapper = new ObjectMapper();
+
+        final var message = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(loanApplication);
+
+        return SendMessageRequest.builder()
+                .queueUrl(this.properties.acceptedLoanApplicationsQueueUrl())
                 .messageBody(message)
                 .build();
     }

@@ -8,5 +8,6 @@ public record SQSSenderProperties(
      String processedLoanApplicationsQueueUrl,
      String debtCapacityCalculationQueueUrl,
      String processedAutomaticValidationLoanApplicationsQueueUrl,
+     String acceptedLoanApplicationsQueueUrl,
      String endpoint){
 }

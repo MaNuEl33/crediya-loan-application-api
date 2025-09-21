@@ -87,6 +87,11 @@ class ApproveOrRejectLoanApplicationUseCaseTest {
                     Mockito.any(LoanApplication.class), Mockito.any(LoanApplicationApprovalState.class)))
                 .thenReturn(Mono.empty());
 
+        if (LoanApplicationApprovalState.APPROVED.equals(approvalState)) {
+            Mockito.when(this.loanApplicationNotifier.notifyAcceptedLoanApplication(Mockito.any(LoanApplication.class)))
+                    .thenReturn(Mono.empty());
+        }
+
         StepVerifier.create(this.useCase.approveOrRejectLoanApplication(1L, approvalState))
                 .verifyComplete();
 
@@ -96,6 +101,10 @@ class ApproveOrRejectLoanApplicationUseCaseTest {
         Mockito.verify(this.loanApplicationRepository).save(loanApplicationToSave);
         Mockito.verify(this.loanApplicationNotifier)
                 .notifyProcessedLoanApplication(loanApplicationToNotify, approvalState);
+
+        if (LoanApplicationApprovalState.APPROVED.equals(approvalState)) {
+            Mockito.verify(this.loanApplicationNotifier).notifyAcceptedLoanApplication(loanApplicationToNotify);
+        }
 
         Mockito.verifyNoMoreInteractions(this.loanApplicationRepository, this.loanApplicationStateRepository,
                 this.loanApplicationNotifier);

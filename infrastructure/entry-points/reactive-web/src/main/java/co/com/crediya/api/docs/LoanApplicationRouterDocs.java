@@ -20,6 +20,7 @@ import org.springdoc.core.annotations.RouterOperations;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.ServerResponse;
 
@@ -31,6 +32,7 @@ public class LoanApplicationRouterDocs {
     @RouterOperations(
         @RouterOperation(
                 path = "/solicitudes/{id}/decision",
+                method = RequestMethod.PATCH,
                 operation = @Operation(
                         summary = "Approve or reject loan application",
                         description = "Approve or reject a loan application that is pending validation.",

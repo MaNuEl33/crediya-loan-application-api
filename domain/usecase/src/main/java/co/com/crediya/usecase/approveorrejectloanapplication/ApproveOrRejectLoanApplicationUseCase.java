@@ -34,7 +34,9 @@ public class ApproveOrRejectLoanApplicationUseCase {
                 .handle(this::validateLoanApplicationState)
                 .flatMap(l -> this.setFinalState(l, approvalState))
                 .flatMap(this.loanApplicationRepository::save)
-                .flatMap(l -> this.loanApplicationNotifier.notifyProcessedLoanApplication(l, approvalState));
+                .flatMap(l -> Mono.when(
+                        this.loanApplicationNotifier.notifyProcessedLoanApplication(l, approvalState),
+                        this.notifyAcceptedLoanApplication(l, approvalState)));
     }
 
     private Mono<Void> validateLoanApplicationId(Long loanApplicationId) {
@@ -101,5 +103,12 @@ public class ApproveOrRejectLoanApplicationUseCase {
         return this.loanApplicationStateRepository.findByCode(REJECTED_STATE_CODE)
                 .switchIfEmpty(Mono.error(new LoanApplicationStateNotFoundException(notFoundErrorMessage)))
                 .map(state -> loanApplication.toBuilder().state(state).build());
+    }
+
+    private Mono<Void> notifyAcceptedLoanApplication(LoanApplication loanApplication, LoanApplicationApprovalState approvalState) {
+        return switch (approvalState) {
+            case APPROVED -> this.loanApplicationNotifier.notifyAcceptedLoanApplication(loanApplication);
+            case REJECTED -> Mono.empty();
+        };
     }
 }

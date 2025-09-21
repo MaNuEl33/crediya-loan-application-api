@@ -50,6 +50,7 @@ adapter:
     processedLoanApplicationsQueueUrl: "${SQS_PROCESSED_LOAN_APPLICATIONS_QUEUE_URL}"
     debtCapacityCalculationQueueUrl: "${SQS_DEBT_CAPACITY_CALCULATION_QUEUE_URL}"
     processedAutomaticValidationLoanApplicationsQueueUrl: "${SQS_PROCESSED_AUTOMATIC_VALIDATION_LOAN_APPLICATIONS_QUEUE_URL}"
+    acceptedLoanApplicationsQueueUrl: "${SQS_ACCEPTED_LOAN_APPLICATIONS_QUEUE_URL}"
     endpoint: "${SQS_ENDPOINT}"
   restconsumer:
     timeout: 5000

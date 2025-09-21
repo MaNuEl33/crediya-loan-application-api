@@ -8,8 +8,9 @@ import co.com.crediya.model.loanapplicationstate.enums.LoanApplicationCodeState;
 import co.com.crediya.model.loanapplicationstate.gateways.LoanApplicationStateRepository;
 import co.com.crediya.model.loantype.LoanType;
 import co.com.crediya.model.loantype.gateways.LoanTypeRepository;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -37,8 +38,9 @@ class UpdateAutomaticValidationLoanApplicationStateUseCaseTest {
     @InjectMocks
     private UpdateAutomaticValidationLoanApplicationStateUseCase useCase;
 
-    @Test
-    void shouldUpdateLoanApplicationState() {
+    @ParameterizedTest
+    @EnumSource(LoanApplicationCodeState.class)
+    void shouldUpdateLoanApplicationState(LoanApplicationCodeState loanApplicationCodeState) {
         final var loanApplication = LoanApplication.builder()
                 .id(5L)
                 .email("manuelharo1994@gmail.com")
@@ -49,7 +51,7 @@ class UpdateAutomaticValidationLoanApplicationStateUseCaseTest {
                 .build();
 
         final var loanApplicationToSave = loanApplication.toBuilder()
-                .state(LoanApplicationState.builder().id(9L).code(LoanApplicationCodeState.ACCEPTED.name()).build())
+                .state(LoanApplicationState.builder().id(9L).code(loanApplicationCodeState.name()).build())
                 .build();
 
         final var loanApplicationSaved = loanApplicationToSave.toBuilder()
@@ -64,7 +66,7 @@ class UpdateAutomaticValidationLoanApplicationStateUseCaseTest {
                 .thenReturn(Mono.just(loanApplication));
 
         Mockito.when(this.loanApplicationStateRepository.findByCode(Mockito.anyString()))
-                .thenReturn(Mono.just(LoanApplicationState.builder().id(9L).code(LoanApplicationCodeState.ACCEPTED.name()).build()));
+                .thenReturn(Mono.just(LoanApplicationState.builder().id(9L).code(loanApplicationCodeState.name()).build()));
 
         Mockito.when(this.loanApplicationRepository.save(Mockito.any(LoanApplication.class)))
                 .thenReturn(Mono.just(loanApplicationSaved));
@@ -75,14 +77,23 @@ class UpdateAutomaticValidationLoanApplicationStateUseCaseTest {
         Mockito.when(this.loanApplicationNotifier.notifyAutomaticValidationLoanApplicationState(Mockito.any(LoanApplication.class), Mockito.any(LoanApplicationCodeState.class)))
                 .thenReturn(Mono.empty());
 
-        StepVerifier.create(this.useCase.execute(5L, LoanApplicationCodeState.ACCEPTED))
+        if (LoanApplicationCodeState.ACCEPTED.equals(loanApplicationCodeState)) {
+            Mockito.when(this.loanApplicationNotifier.notifyAcceptedLoanApplication(Mockito.any(LoanApplication.class)))
+                    .thenReturn(Mono.empty());
+        }
+
+        StepVerifier.create(this.useCase.execute(5L, loanApplicationCodeState))
                 .verifyComplete();
 
         Mockito.verify(this.loanApplicationRepository).findById(5L);
-        Mockito.verify(this.loanApplicationStateRepository).findByCode(LoanApplicationCodeState.ACCEPTED.name());
+        Mockito.verify(this.loanApplicationStateRepository).findByCode(loanApplicationCodeState.name());
         Mockito.verify(this.loanApplicationRepository).save(loanApplicationToSave);
         Mockito.verify(this.loanTypeRepository).findById(12L);
-        Mockito.verify(this.loanApplicationNotifier).notifyAutomaticValidationLoanApplicationState(loanApplicationToNotify, LoanApplicationCodeState.ACCEPTED);
+        Mockito.verify(this.loanApplicationNotifier).notifyAutomaticValidationLoanApplicationState(loanApplicationToNotify, loanApplicationCodeState);
+
+        if (LoanApplicationCodeState.ACCEPTED.equals(loanApplicationCodeState)) {
+            Mockito.verify(this.loanApplicationNotifier).notifyAcceptedLoanApplication(loanApplicationToNotify);
+        }
 
         Mockito.verifyNoMoreInteractions(this.loanApplicationRepository, this.loanApplicationStateRepository,
                 this.loanTypeRepository, this.loanApplicationNotifier);
